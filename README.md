@@ -65,6 +65,7 @@ Download or git clone below packages
 
 Install packages using below commands.
 ```
+cd mint_ws
 rosdep install --from-paths src --ignore-src -r -y
 colcon build --symlink-install
 echo source $(pwd)/install/local_setup.bash >> ~/.bashrc
