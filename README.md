@@ -4,6 +4,9 @@
 
 ## Work condition
 - ROS2 humble & Ubuntu 22.04
+- ASUS ROG Flow X13
+  - CPU : [AMD Ryzen™ 9 5900HS](https://www.amd.com/en/products/apu/amd-ryzen-9-5900hs)
+  - GPU : [NVIDIA GeForce RTX 3050 Ti Mobile](https://www.notebookcheck.net/NVIDIA-GeForce-RTX-3050-Ti-Laptop-GPU-Benchmarks-and-Specs.527430.0.html)
 
 
 ## Using sensors
@@ -40,34 +43,97 @@
     - TTFF
       - Hot start < 2s
       - Cold start < 25s
-
+  
+  - ### [Sensors outline](https://cad.onshape.com/documents/e604f5206b6b069382c1478e/w/2c3c9b12e499277badf01ed1/e/66ac3166ca2dbf7da4c255b7)
+    ![sensors outline](images/Sensors_Outline.png)
 ## Installation
 
 ### Prerequisite
+- **[Ubuntu 20.04 (Focal Fossa)](https://releases.ubuntu.com/focal)** or **[Ubuntu 22.04 (Jammy Jellyfish)](https://releases.ubuntu.com/jammy/)**
 - **ROS2** : Follow the instruction below to install ROS2 on PC.
   - [ROS2 Debian packages(humble)](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html)
-- **ZED SDK** : 
+- **[ZED SDK](https://www.stereolabs.com/developers/release/)**
+  - Install [CUDA](https://developer.nvidia.com/cuda-11-8-0-download-archive) (Recommend 11.8) & [cuDNN](https://developer.nvidia.com/rdp/cudnn-archive)
+  - Following [Getting started](https://github.com/stereolabs/zed-sdk#getting-started)
 
 ### Creating a work space
 Create work space
 - ```
-    mkdir -p mint_ws/src && cd mint_ws/src
+    mkdir -p mint_ws/src
    ```
+
+Next, follow below instruction to install **[zed-ros2-wrapper](https://github.com/stereolabs/zed-ros2-wrapper) ( ZED 2i )**
+```
+cd ~/mint_ws/src/ #use your current ros2 workspace folder
+git clone  --recursive https://github.com/stereolabs/zed-ros2-wrapper.git
+cd ..
+rosdep install --from-paths src --ignore-src -r -y
+colcon build --symlink-install --cmake-args=-DCMAKE_BUILD_TYPE=Release --parallel-workers $(nproc)
+echo source $(pwd)/install/local_setup.bash >> ~/.bashrc
+source ~/.bashrc
+```
 Download or git clone below packages
 - [ros2_ouster_drivers](https://github.com/ros-drivers/ros2_ouster_drivers/tree/humble) ( OS-1 LiDAR )
-- [ublox_ros](https://github.com/KumarRobotics/ublox/tree/ros2) ( RTK_Express_Plus )
-- [zed-ros2-wrapper](https://github.com/stereolabs/zed-ros2-wrapper) ( ZED 2i )
+- [ublox_ros+NTRIP](https://github.com/olvdhrm/RTK_GPS_NTRIP/tree/main) ( RTK_Express_Plus )
 - [nmea_navsat_driver](https://github.com/ros-drivers/nmea_navsat_driver/tree/ros2) ( Asen GPS )
 - [myahrs_ros2_driver](https://github.com/CLOBOT-Co-Ltd/myahrs_ros2_driver) ( myAHRS+ )
-- [rtcm_msgs](https://github.com/tilk/rtcm_msgs)
-- [ntrip_client](https://github.com/LORD-MicroStrain/ntrip_client/tree/ros2)
-- [fix2nmea](https://github.com/olvdhrm/RTK_GPS_NTRIP/tree/main/fix2nmea)
 
 Install packages using below commands.
 ```
 cd mint_ws
-rosdep install --from-paths src --ignore-src -r -y
 colcon build --symlink-install
-echo source $(pwd)/install/local_setup.bash >> ~/.bashrc
 source ~/.bashrc
+```
+
+**Note**: If you using ros2 humble(22.04), you might got this error when build **myahrs_ros2**
+![my_ahrs_error](images/my_ahrs_error.png).
+
+This is due to this package is made for **foxy** and **declare_parameter** don't have default value in humble([foxy](https://docs.ros2.org/foxy/api/rclcpp/classrclcpp_1_1Node.html#a095ea977b26e7464d9371efea5f36c42), [humble](https://docs.ros2.org/foxy/api/rclcpp/classrclcpp_1_1Node.html#a095ea977b26e7464d9371efea5f36c42)). So, you have to insert default value.  
+To insert, open mint_ws/src/myahrs_ros2_driver-master/myahrs_ros2_driver/src/myahrs_ros2_driver.cpp  
+
+Next, insert default value end of declare_parameter function
+![default_value](images/default_value.png)  
+This values will be updated based on your .config or .yaml file when you launch the node using .launch.py.  
+So, don't worry about value and just match value type. (If parameters are not declared in .config or .yaml, you need to insert your values)
+
+## Change launch.py files
+To change port name, you have to change .config or .yaml file due to original launch.py files not declare this variable as a parameter. Therefore, converting this variable into a declared parameter is convenient.
+
+Forexample, if you want to change ublox_gps launch.py, replace ublox_gps_node-launch.py to below code.
+```
+import os
+
+import ament_index_python.packages
+import launch
+import launch_ros.actions
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+
+
+def generate_launch_description():
+    config_directory = os.path.join(
+        ament_index_python.packages.get_package_share_directory('ublox_gps'),
+        'config')
+    params = os.path.join(config_directory, 'zed_f9p.yaml')
+    device_arg = DeclareLaunchArgument('device', default_value='/dev/ttyACM1')
+    ublox_gps_node = launch_ros.actions.Node(package='ublox_gps',
+                                             executable='ublox_gps_node',
+                                             output='both',
+                                             parameters=[params, {'device': LaunchConfiguration('device')}],)
+
+    return launch.LaunchDescription([device_arg,
+    				     ublox_gps_node,
+
+                                     launch.actions.RegisterEventHandler(
+                                         event_handler=launch.event_handlers.OnProcessExit(
+                                             target_action=ublox_gps_node,
+                                             on_exit=[launch.actions.EmitEvent(
+                                                 event=launch.events.Shutdown())],
+                                         )),
+                                     ])
+```  
+Next, remove **device:** parameter in ublox_gps/config/zed_f9p.yaml.  
+Open terminal and input below code to test changed launch.py file.
+```
+ros2 launch ublox_gps ublox_gps_node-launch.py -s
 ```
