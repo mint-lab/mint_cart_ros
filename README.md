@@ -86,7 +86,7 @@
     ```
 
     **Note**: If you using ros2 humble(22.04), you might got this error when build **myahrs_ros2**
-    ![my_ahrs_error](images/my_ahrs_error.png).
+    ![my_ahrs_error](images/myahrs_error.png).
 
     This is due to this package is made for **foxy** and **declare_parameter** don't have default value in humble([foxy](https://docs.ros2.org/foxy/api/rclcpp/classrclcpp_1_1Node.html#a095ea977b26e7464d9371efea5f36c42), [humble](https://docs.ros2.org/foxy/api/rclcpp/classrclcpp_1_1Node.html#a095ea977b26e7464d9371efea5f36c42)). So, you have to insert default value.  
     To insert, open mint_ws/src/myahrs_ros2_driver-master/myahrs_ros2_driver/src/myahrs_ros2_driver.cpp  
