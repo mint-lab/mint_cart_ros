@@ -1,4 +1,4 @@
-# Mint Cart for ROS2
+# MINT Cart for ROS2
 
 **mint_cart_ros** is a package for **MINT-CART** of [MINT LAB](https://mint-lab.github.io/) to get dataset and test sensor fusion.
 
@@ -57,50 +57,71 @@
   - Following [Getting started](https://github.com/stereolabs/zed-sdk#getting-started)
 
 ### Creating a work space
-Create work space
-- ```
-    mkdir -p mint_ws/src
+1. Create work space
+   ```
+   mkdir -p mint_ws/src
    ```
 
-Next, follow below instruction to install **[zed-ros2-wrapper](https://github.com/stereolabs/zed-ros2-wrapper) ( ZED 2i )**
-```
-cd ~/mint_ws/src/ #use your current ros2 workspace folder
-git clone  --recursive https://github.com/stereolabs/zed-ros2-wrapper.git
-cd ..
-rosdep install --from-paths src --ignore-src -r -y
-colcon build --symlink-install --cmake-args=-DCMAKE_BUILD_TYPE=Release --parallel-workers $(nproc)
-echo source $(pwd)/install/local_setup.bash >> ~/.bashrc
-source ~/.bashrc
-```
-Download or git clone below packages
-- [ros2_ouster_drivers](https://github.com/ros-drivers/ros2_ouster_drivers/tree/humble) ( OS-1 LiDAR )
-- [ublox_ros+NTRIP](https://github.com/olvdhrm/RTK_GPS_NTRIP/tree/main) ( RTK_Express_Plus )
-- [nmea_navsat_driver](https://github.com/ros-drivers/nmea_navsat_driver/tree/ros2) ( Asen GPS )
-- [myahrs_ros2_driver](https://github.com/CLOBOT-Co-Ltd/myahrs_ros2_driver) ( myAHRS+ )
+2. Follow below instruction to install **[zed-ros2-wrapper](https://github.com/stereolabs/zed-ros2-wrapper) ( ZED 2i )**
+    ```
+    cd ~/mint_ws/src/ #use your current ros2 workspace folder
+    git clone  --recursive https://github.com/stereolabs/zed-ros2-wrapper.git
+    cd ..
+    rosdep install --from-paths src --ignore-src -r -y
+    colcon build --symlink-install --cmake-args=-DCMAKE_BUILD_TYPE=Release --parallel-workers $(nproc)
+    echo source $(pwd)/install/local_setup.bash >> ~/.bashrc
+    source ~/.bashrc
+   ```
+3. Download or git clone below packages
+   - [ros2_ouster_drivers](https://github.com/ros-drivers/ros2_ouster_drivers/tree/humble) ( OS-1 LiDAR )
+   - [ublox_ros+NTRIP](https://github.com/olvdhrm/RTK_GPS_NTRIP/tree/main) ( RTK_Express_Plus )
+   - [nmea_navsat_driver](https://github.com/ros-drivers/nmea_navsat_driver/tree/ros2) ( Asen GPS )
+   - [myahrs_ros2_driver](https://github.com/CLOBOT-Co-Ltd/myahrs_ros2_driver) ( myAHRS+ )
 
-Install packages using below commands.
-```
-cd mint_ws
-colcon build --symlink-install
-source ~/.bashrc
-```
+4. Install packages using below commands.
+    ```
+    cd mint_ws
+    colcon build --symlink-install
+    source ~/.bashrc
+    ```
 
-**Note**: If you using ros2 humble(22.04), you might got this error when build **myahrs_ros2**
-![my_ahrs_error](images/my_ahrs_error.png).
+    **Note**: If you using ros2 humble(22.04), you might got this error when build **myahrs_ros2**
+    ![my_ahrs_error](images/my_ahrs_error.png).
 
-This is due to this package is made for **foxy** and **declare_parameter** don't have default value in humble([foxy](https://docs.ros2.org/foxy/api/rclcpp/classrclcpp_1_1Node.html#a095ea977b26e7464d9371efea5f36c42), [humble](https://docs.ros2.org/foxy/api/rclcpp/classrclcpp_1_1Node.html#a095ea977b26e7464d9371efea5f36c42)). So, you have to insert default value.  
-To insert, open mint_ws/src/myahrs_ros2_driver-master/myahrs_ros2_driver/src/myahrs_ros2_driver.cpp  
+    This is due to this package is made for **foxy** and **declare_parameter** don't have default value in humble([foxy](https://docs.ros2.org/foxy/api/rclcpp/classrclcpp_1_1Node.html#a095ea977b26e7464d9371efea5f36c42), [humble](https://docs.ros2.org/foxy/api/rclcpp/classrclcpp_1_1Node.html#a095ea977b26e7464d9371efea5f36c42)). So, you have to insert default value.  
+    To insert, open mint_ws/src/myahrs_ros2_driver-master/myahrs_ros2_driver/src/myahrs_ros2_driver.cpp  
 
-Next, insert default value end of declare_parameter function
-![default_value](images/default_value.png)  
-This values will be updated based on your .config or .yaml file when you launch the node using .launch.py.  
-So, don't worry about value and just match value type. (If parameters are not declared in .config or .yaml, you need to insert your values)
+    Next, insert default value end of declare_parameter function
+    ```c++
+    namespace WithRobot
+    {
+    MyAhrsDriverForROS::MyAhrsDriverForROS(std::string port, int baud_rate)
+    : iMyAhrsPlus(port, baud_rate), Node("myahrs_ros2")
+    {
+      // dependent on user device
+      publish_tf_ = false;
+      frame_id_ = "imu_link";
+      parent_frame_id_ = "base_link";
 
-## Change launch.py files
+      this->declare_parameter("linear_acceleration_stddev", 0.0);
+      this->declare_parameter("angular_velocity_stddev", 0.0);
+      this->declare_parameter("magnetic_field_stddev", 0.0);
+      this->declare_parameter("orientation_stddev", 0.0);
+
+      this->get_parameter(
+        "linear_acceleration_stddev", linear_acceleration_stddev_);
+      this->get_parameter("angular_velocity_stddev", angular_velocity_stddev_);
+      this->get_parameter("magnetic_field_stddev", magnetic_field_stddev_);
+      this->get_parameter("orientation_stddev", orientation_stddev_);
+    ``` 
+    This values will be updated based on your .config or .yaml file when you launch the node using .launch.py.  
+    So, don't worry about value and just match value type. (If parameters are not declared in .config or .yaml, you need to insert your values)
+
+### Change launch.py files
 To change port name, you have to change .config or .yaml file due to original launch.py files not declare this variable as a parameter. Therefore, converting this variable into a declared parameter is convenient.
 
 Forexample, if you want to change ublox_gps launch.py, replace ublox_gps_node-launch.py to below code.
-```
+```python
 import os
 
 import ament_index_python.packages
