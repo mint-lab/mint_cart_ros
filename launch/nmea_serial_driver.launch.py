@@ -32,6 +32,7 @@ def generate_launch_description():
         package='nmea_navsat_driver',
         executable='nmea_serial_driver',
         output='screen',
+        remappings=[("fix", "ascen/fix")],
         parameters=[config_file, {'port': LaunchConfiguration('port')}])
 
     return LaunchDescription([port_arg, driver_node])
