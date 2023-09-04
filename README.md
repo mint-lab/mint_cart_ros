@@ -74,7 +74,6 @@
    ```
 3. Download or git clone below packages
    - [ros2_ouster_drivers](https://github.com/ros-drivers/ros2_ouster_drivers/tree/humble) ( OS-1 LiDAR )
-   - [ublox_ros+NTRIP](https://github.com/olvdhrm/RTK_GPS_NTRIP/tree/main) ( RTK_Express_Plus )
    - [nmea_navsat_driver](https://github.com/ros-drivers/nmea_navsat_driver/tree/ros2) ( Asen GPS )
    - [myahrs_ros2_driver](https://github.com/CLOBOT-Co-Ltd/myahrs_ros2_driver) ( myAHRS+ )
 
