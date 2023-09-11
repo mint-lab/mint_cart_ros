@@ -2,33 +2,45 @@ import numpy as np
 from filterpy.kalman import ExtendedKalmanFilter
 from filterpy.common import Q_discrete_white_noise
 import transforms3d.quaternions as quat
+from tf_transformations import euler_from_quaternion
 
 import rclpy
 from rclpy.node import Node
 from rclpy.clock import Clock
 from geometry_msgs.msg import TransformStamped
 from tf2_msgs.msg import TFMessage
-from nav_msgs.msg import Odometry
+from sensor_msgs.msg import NavSatFix
 from sensor_msgs.msg import Imu
+from numpy.linalg import inv
+from scipy.spatial.transform import Rotation
+from pyproj import Transformer
 
 class EKF_node(Node):
     def __init__(self):
         super().__init__('ekf_node')
-        self.zed_odom_sub = self.create_subscription(Odometry, '/zed2i/zed_node/odom', self.odom_callback, 10) # this odom will be changed by gps_odom
-        self.imu_sub = self.create_subscription(Imu, '/imu/data', self.imu_callback, 10)
+        self.subscription = self.create_subscription(
+            NavSatFix,
+            '/ublox_gps_node/fix',
+            self.fix_callback,
+            10)
+        
+        self.imu_subscription = self.create_subscription(
+            Imu,
+            '/imu/data',
+            self.imu_callback,
+            10
+        )
         self.pub = self.create_publisher(TFMessage, '/tf', 10)
 
-        self.x = 0
-        self.y = 0
-        self.z = 0
-        self.ox = 0
-        self.oy = 0
-        self.oz = 0
-        self.ow = 0
+        self.positions = np.empty((0,3))
+        self.init_east = 0
+        self.init_north = 0
+        self.init_alt = 0
+        self.relative_matrix = 0
+        self.is_fix_init = True
+        self.is_imu_init = True
 
-        self.is_init = True
-        self.init_q = np.zeros((4,))
-        self.current_q = np.zeros((4,))
+        self.init_quart = np.zeros(4)
 
         self.localizer = ExtendedKalmanFilter(dim_x=7, dim_z=7)
         self.localizer.F = np.eye(7)
@@ -37,23 +49,58 @@ class EKF_node(Node):
         self.H = lambda x: np.eye(7)
         self.R = 1 * 1 * np.eye(7)
 
+        self.x = 0
+        self.y = 0
+        self.z = 0
+
+    def fix_callback(self, data):
+        if (self.is_imu_init == False):
+            latitude = data.latitude
+            longitude = data.longitude
+            altitude = data.altitude
+
+            utm_e, utm_n = self.lat_lon_to_utm(latitude, longitude)
+
+            if (self.is_fix_init == True):
+                self.init_east = utm_e
+                self.init_north = utm_n
+                self.init_alt = altitude
+                self.is_fix_init=False
+
+            diff_e = -(utm_e-self.init_east)
+            diff_n = utm_n-self.init_north
+            diff_a = altitude-self.init_alt
+
+            pos_array = np.array([diff_n, diff_e, diff_a])
+            filtered_position = inv(self.relative_matrix) @ pos_array
+            print(filtered_position)
+            self.x = filtered_position[0]
+            self.y = filtered_position[1]
+            self.z = filtered_position[2]
+
+    def lat_lon_to_utm(self, latitude, longitude):
+        transformer = Transformer.from_crs('EPSG:4326', 'EPSG:32752')
+        utm_easting, utm_northing = transformer.transform(latitude, longitude)
+        return utm_easting, utm_northing
+
     def imu_callback(self, data):
-        if (self.is_init==True):
-            self.init_q[0] = data.orientation.w
-            self.init_q[1] = data.orientation.x
-            self.init_q[2] = data.orientation.y
-            self.init_q[3] = data.orientation.z
-            self.is_init = False
+        q_x = data.orientation.x
+        q_y = data.orientation.y
+        q_z = data.orientation.z
+        q_w = data.orientation.w
 
-        self.current_q[0] = data.orientation.w
-        self.current_q[1] = data.orientation.x
-        self.current_q[2] = data.orientation.y
-        self.current_q[3] = data.orientation.z
+        if (self.is_imu_init == True):
 
-        delta_q = quat.qmult(quat.qinverse(self.init_q), self.current_q)
+            self.init_quart = np.array([q_w, q_x, q_y, q_z])
 
-        print('current_q : ', self.current_q)
-        print('delta_q : ', delta_q, '\n')
+            self.relative_matrix = Rotation.from_quat([q_x, q_y, q_z, q_w]).as_matrix()
+            print(self.relative_matrix)
+            self.is_imu_init=False
+
+        current_q = np.array([q_w, q_x, q_y, q_z])
+
+        delta_q = quat.qmult(quat.qinverse(self.init_quart), current_q)
+
         self.ox = delta_q[1]
         self.oy = delta_q[2]
         self.oz = delta_q[3]
@@ -78,14 +125,8 @@ class EKF_node(Node):
         tf_msg = TFMessage()
         tf_msg.transforms = [msg]
         self.pub.publish(tf_msg)
-        
         self.localizer.predict()
 
-
-    def odom_callback(self, data):
-        self.x = data.pose.pose.position.x
-        self.y = data.pose.pose.position.y
-        self.z = data.pose.pose.position.z
 
 def main():
     rclpy.init()
