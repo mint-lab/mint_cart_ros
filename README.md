@@ -33,7 +33,7 @@
       - Hot start < 1s
       - Warm start < 28s
       - Cold start < 29s
-  - GPS-RTK : [SparkFun RTK Express Plus](https://www.sparkfun.com/products/18590) ([Ublox_ros](https://github.com/KumarRobotics/ublox))
+  - GPS-RTK : [SparkFun RTK Express Plus](https://www.sparkfun.com/products/18590) ([nmea_navsat_driver](https://github.com/ros-drivers/nmea_navsat_driver/tree/ros2))
     - GNSS Receiver : ZED-F9R
     - Built-in IMU (3-Axis Accel, 3-Axis Gyro)
     - Frequency : Up to 4Hz
