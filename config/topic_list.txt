@@ -1,0 +1,10 @@
+/imu/data
+/ublox/fix
+/zed2/zed_node/atm_press
+/zed2/zed_node/depth/depth_registered
+/zed2/zed_node/imu/data
+/zed2/zed_node/odom
+/zed2/zed_node/left/image_rect_color
+/zed2/zed_node/right/image_rect_color
+/zed2/zed_node/point_cloud/cloud_registered
+/points
