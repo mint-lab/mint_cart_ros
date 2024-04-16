@@ -1,7 +1,7 @@
 from launch import LaunchDescription
 from launch.actions import ExecuteProcess
 
-list_txt = open('/home/nrf-mint/Downloads/mint_ws/src/mint_cart/config/topic_list.txt','r')
+list_txt = open('../config/topic_list.txt','r')
 topics = []
 
 for line in list_txt:

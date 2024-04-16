@@ -16,6 +16,7 @@ from launch_ros.event_handlers import OnStateTransition
 from launch.actions import LogInfo
 from launch.events import matches_action
 from launch.event_handlers.on_shutdown import OnShutdown
+from launch_ros import actions
 import lifecycle_msgs.msg
 import launch
 
@@ -25,8 +26,14 @@ def generate_launch_description():
     myahrs_config_dir = get_package_share_directory('myahrs_ros2_driver')
     myahrs_config_file = os.path.join(myahrs_config_dir, 'config', 'config.yaml')
     
-    #nmea_gps
-    nmea_config_dir = os.path.join(get_package_share_directory("nmea_navsat_driver"), "config", "nmea_serial_driver.yaml")
+    #ublox_gps
+    ublox_config_file = os.path.join(get_package_share_directory("nmea_navsat_driver"), "config", "ublox_serial_driver.yaml")
+    ublox_driver_node = actions.Node(
+        package='nmea_navsat_driver',
+        executable='nmea_serial_driver',
+        output='screen',
+        remappings=[("fix", "ublox/fix")],
+        parameters=[ublox_config_file, {'port': LaunchConfiguration('port')}])
 
     #ouster 3d lidar
     ouster_share_dir = get_package_share_directory('ros2_ouster')
@@ -82,14 +89,6 @@ def generate_launch_description():
             ],
         )
     )
-
-    # RTK_GPS
-    ublox_config_directory = os.path.join(get_package_share_directory('ublox_gps'), 'config')
-    ublox_params = os.path.join(ublox_config_directory, 'zed_f9p.yaml')
-    ublox_gps_node = Node(package='ublox_gps',
-                                        executable='ublox_gps_node',
-                                        output='both',
-                                        parameters=[ublox_params])
     
     camera_model = 'zed2i'  
 
@@ -111,7 +110,7 @@ def generate_launch_description():
             package='nmea_navsat_driver',
             executable='nmea_serial_driver',
             output='screen',
-            parameters=[nmea_config_dir]
+            parameters=[ublox_config_file]
         ),
 
         ouster_params_declare,
@@ -120,7 +119,7 @@ def generate_launch_description():
         ouster_configure_event,
         shutdown_event,
 
-        ublox_gps_node,
+        ublox_driver_node,
 
         RegisterEventHandler(
                                          event_handler=launch.event_handlers.OnProcessExit(

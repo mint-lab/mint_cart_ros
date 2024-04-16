@@ -36,7 +36,7 @@
   - GPS-RTK : [SparkFun RTK Express Plus](https://www.sparkfun.com/products/18590) ([nmea_navsat_driver](https://github.com/ros-drivers/nmea_navsat_driver/tree/ros2))
     - GNSS Receiver : ZED-F9R
     - Built-in IMU (3-Axis Accel, 3-Axis Gyro)
-    - Frequency : Up to 4Hz
+    - Frequency : Up to 20Hz(RTK)
     - Accuracy
       - With IMU < 30cm
       - With RTK & IMU < 1.4cm
@@ -75,7 +75,7 @@
 3. Download or git clone below packages
    - [ros2_ouster_drivers](https://github.com/ros-drivers/ros2_ouster_drivers/tree/humble) ( OS-1 LiDAR )
    - [nmea_navsat_driver](https://github.com/ros-drivers/nmea_navsat_driver/tree/ros2) ( Asen GPS )
-   - [myahrs_ros2_driver](https://github.com/CLOBOT-Co-Ltd/myahrs_ros2_driver) ( myAHRS+ )
+   - [myahrs_ros2_driver](https://github.com/CLOBOT-Co-Ltd/myahrs_ros2_driver) ( myAHRS+ )  
 
 4. Install packages using below commands.
     ```
@@ -85,9 +85,9 @@
     ```
 
     **Note**: If you using ros2 humble(22.04), you might got this error when build **myahrs_ros2**
-    ![my_ahrs_error](images/myahrs_error.png).
+    ![my_ahrs_error](images/myahrs_error.png)
 
-    This is due to this package is made for **foxy** and **declare_parameter** don't have default value in humble([foxy](https://docs.ros2.org/foxy/api/rclcpp/classrclcpp_1_1Node.html#a095ea977b26e7464d9371efea5f36c42), [humble](https://docs.ros.org/en/humble/p/rclcpp/generated/classrclcpp_1_1Node.html#_CPPv4N6rclcpp4Node17declare_parameterERKNSt6stringERKN6rclcpp14ParameterValueERKN14rcl_interfaces3msg19ParameterDescriptorEb))). So, you have to insert default value.  
+    This is due to this package is made for **foxy** and **declare_parameter** don't have default value in humble([foxy](https://docs.ros2.org/foxy/api/rclcpp/classrclcpp_1_1Node.html#a095ea977b26e7464d9371efea5f36c42), [humble](https://docs.ros2.org/foxy/api/rclcpp/classrclcpp_1_1Node.html#a095ea977b26e7464d9371efea5f36c42)). So, you have to insert default value.  
     To insert, open mint_ws/src/myahrs_ros2_driver-master/myahrs_ros2_driver/src/myahrs_ros2_driver.cpp  
 
     Next, insert default value end of declare_parameter function
@@ -119,41 +119,54 @@
 ### Change launch.py files
 To change port name, you have to change .config or .yaml file due to original launch.py files not declare this variable as a parameter. Therefore, converting this variable into a declared parameter is convenient.
 
-Forexample, if you want to change ublox_gps launch.py, replace ublox_gps_node-launch.py to below code.
+Forexample, if you want to change nmea_navsat_driver, replace nmea_serial_driver.launch.py to below code.
 ```python
 import os
+import sys
 
-import ament_index_python.packages
-import launch
-import launch_ros.actions
+from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription, LaunchIntrospector, LaunchService
+from launch_ros import actions
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description():
-    config_directory = os.path.join(
-        ament_index_python.packages.get_package_share_directory('ublox_gps'),
-        'config')
-    params = os.path.join(config_directory, 'zed_f9p.yaml')
-    device_arg = DeclareLaunchArgument('device', default_value='/dev/ttyACM1')
-    ublox_gps_node = launch_ros.actions.Node(package='ublox_gps',
-                                             executable='ublox_gps_node',
-                                             output='both',
-                                             parameters=[params, {'device': LaunchConfiguration('device')}],)
+    """Generate a launch description for a single serial driver."""
+    config_file = os.path.join(get_package_share_directory("nmea_navsat_driver"), "config", "nmea_serial_driver.yaml")
+    port_arg = DeclareLaunchArgument('port', default_value='/dev/ttyACM2')
+    driver_node = actions.Node(
+        package='nmea_navsat_driver',
+        executable='nmea_serial_driver',
+        output='screen',
+        remappings=[("fix", "ascen/fix")],
+        parameters=[config_file, {'port': LaunchConfiguration('port')}])
 
-    return launch.LaunchDescription([device_arg,
-    				     ublox_gps_node,
+    return LaunchDescription([port_arg, driver_node])
 
-                                     launch.actions.RegisterEventHandler(
-                                         event_handler=launch.event_handlers.OnProcessExit(
-                                             target_action=ublox_gps_node,
-                                             on_exit=[launch.actions.EmitEvent(
-                                                 event=launch.events.Shutdown())],
-                                         )),
-                                     ])
+
+def main(argv):
+    ld = generate_launch_description()
+
+    print('Starting introspection of launch description...')
+    print('')
+
+    print(LaunchIntrospector().format_launch_description(ld))
+
+    print('')
+    print('Starting launch of launch description...')
+    print('')
+
+    ls = LaunchService()
+    ls.include_launch_description(ld)
+    return ls.run()
+
+
+if __name__ == '__main__':
+    main(sys.argv)
 ```  
-Next, remove **device:** parameter in ublox_gps/config/zed_f9p.yaml.  
-Open terminal and input below code to test changed launch.py file.
+Next, remove **port:** parameter in ublox_gps/config/zed_f9p.yaml.  
+Open terminal and input below code to check changed launch.py file.
 ```
-ros2 launch ublox_gps ublox_gps_node-launch.py -s
+ros2 launch nmea_navsat_driver nmea_serial_driver.launch.py -s
 ```
