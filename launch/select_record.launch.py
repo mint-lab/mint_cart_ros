@@ -1,7 +1,16 @@
+import os
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import ExecuteProcess
 
-list_txt = open('../config/topic_list.txt','r')
+package_name = 'mint_cart'
+config_file_path = os.path.join(
+        get_package_share_directory(package_name),
+        'config',
+        'topic_list.txt'
+    )
+
+list_txt = open(config_file_path, 'r')
 topics = []
 
 for line in list_txt:
