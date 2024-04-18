@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set file name and path
-UDEV_RULES="88-surface-gps.rules"
+UDEV_RULES="88-mint-cart.rules"
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")") # Absolute path to this script file
 SOURCE_PATH="$SCRIPT_DIR/$UDEV_RULES"
 TARGET_PATH="/etc/udev/rules.d/$UDEV_RULES"
