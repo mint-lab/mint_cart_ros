@@ -23,7 +23,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    device_arg = DeclareLaunchArgument('device', default_value='/dev/ttyACM1')
+    device_arg = DeclareLaunchArgument('device', default_value='/dev/ttyAHRS')
 
     config_dir = get_package_share_directory('myahrs_ros2_driver')
     config_file = os.path.join(config_dir, 'config', 'config.yaml')
