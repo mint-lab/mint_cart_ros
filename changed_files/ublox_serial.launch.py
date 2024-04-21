@@ -27,7 +27,7 @@ from launch.substitutions import LaunchConfiguration
 def generate_launch_description():
     """Generate a launch description for a single serial driver."""
     config_file = os.path.join(get_package_share_directory("nmea_navsat_driver"), "config", "ublox_serial_driver.yaml")
-    port_arg = DeclareLaunchArgument('port', default_value='/dev/ttyACM1')
+    port_arg = DeclareLaunchArgument('port', default_value='/dev/ttyGPS')
     driver_node = actions.Node(
         package='nmea_navsat_driver',
         executable='nmea_serial_driver',
