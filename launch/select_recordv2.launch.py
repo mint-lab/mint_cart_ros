@@ -60,19 +60,19 @@ def generate_launch_description():
     )
     use_ahrs_arg = DeclareLaunchArgument(
         'use_ahrs', default_value='true',
-        description="True: Record AHRS data"
+        description="true: Record AHRS data"
     )
     use_gps_arg = DeclareLaunchArgument(
         'use_gps', default_value='true',
-        description="True: Record GPS data"
+        description="true: Record GPS data"
     )
     use_lidar_arg = DeclareLaunchArgument(
         'use_lidar', default_value='false',
-        description="True: Record LiDAR data"
+        description="true: Record LiDAR data"
     )
     use_ascender_arg = DeclareLaunchArgument(
         'use_ascender', default_value='true',
-        description="True: Record Ascender data"
+        description="true: Record Ascender data"
     )
 
     return LaunchDescription([
