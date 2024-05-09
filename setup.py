@@ -15,6 +15,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         (os.path.join(SHARE_DIR, "launch"), glob(os.path.join("launch", "*.launch.py"))),
         (os.path.join(SHARE_DIR, "config"), glob(os.path.join("config", "*"))),
+        (os.path.join(SHARE_DIR, "scripts"), glob(os.path.join("scripts", "*")))
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -25,6 +26,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'barometer_data_logger = mint_cart.barometer_data_logger.atmpress_to_csv:main'
         ],
     },
 )
