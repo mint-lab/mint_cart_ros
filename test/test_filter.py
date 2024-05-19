@@ -42,7 +42,7 @@ def find_flat_section(data_list, threshold=0.0002):
     flat_section = np.where(np.abs(gradient) < threshold)[0] # np.where returns tuple
     return flat_section
 
-def calculate_cluster(flat_section, data_list, tolerance=100):
+def calculate_cluster(flat_section, data_list, tolerance=120):
     """Find clusters and calculate the average of each cluster"""
     cluster_list = []
     current_cluster = []
@@ -70,6 +70,22 @@ def calculate_cluster(flat_section, data_list, tolerance=100):
 
     return cluster_list, cluster_average_list
 
+def calculate_relative_altitude(T_0, P_0, P_list):
+    """
+    @brief Calculate the relative altitude from barometric pressure
+    @param T_0 The absolute temperature measured at the initial point [K]
+    @param P_0 The pressure measured at the initial point [Pa]
+    @param P_list A list of pressures measured at the sensor's position by changing the position [Pa]
+    return A list of relative altitude [m]
+    """
+    T_grad = -0.0065 # The temperature change over altitude [K/m]
+    R = 287.058 # The gas constant: 287.052 in paper, 287.058 in wikipedia [J/K*kg]
+    g = 9.80665 # The normal gravity [m/s^2]
+    delta_h = lambda P: (T_0 / T_grad) / (1 - (P / P_0) ** (T_grad * R / g))
+
+    # return [delta_h(p) for p in P_list]
+    return P_list, [delta_h(p) for p in P_list]
+
 def plot_data(measurement, filtered_data, flat_section, cluster_list, cluster_average_list):
     """Plot the measurement data, the filtered data and the flat section"""
     plt.figure(figsize=(20, 10))
@@ -86,7 +102,7 @@ def plot_data(measurement, filtered_data, flat_section, cluster_list, cluster_av
     plt.xlabel('Index')
     plt.ylabel('Pressure [hpa]')
     plt.legend()
-    plt.show()
+    # plt.show()
 
 def main():
     if len(sys.argv) < 2:
@@ -114,8 +130,46 @@ def main():
     # Find clusters and calculate average of each cluster
     cluster_list, cluster_average_list = calculate_cluster(flat_section, pressure_data_list)
 
-    # Create the plot
+    calculate_relative_altitude(21.9+273.15, cluster_average_list[0], cluster_average_list)
+
+    # Plot the barometric data
     plot_data(pressure_data_list, filtered_data_list, flat_section, cluster_list, cluster_average_list)
+
+    # Plot the altitude and barometric data
+    cluster_average_list, relative_altitude_list = calculate_relative_altitude(21.9+273.15, cluster_average_list[0], cluster_average_list)
+    # plt.figure(figsize=(10, 6))
+    # plt.plot(cluster_average_list, relative_altitude_list, marker='o', linestyle='-')
+    # plt.xlabel('Pressure (Pa)')
+    # plt.ylabel('Relative altitude (m)')
+    # plt.title('The relationship between pressure and altitude')
+    # plt.grid(True)
+    # plt.show()
+
+    print(f'Initial pressure: {cluster_average_list[0]}')
+
+    mid_point = len(cluster_average_list) // 2
+    left_pressures = cluster_average_list[1:mid_point + 1]
+    right_pressures = cluster_average_list[mid_point:-1]
+    left_altitudes = relative_altitude_list[1:mid_point + 1]
+    right_altitudes = relative_altitude_list[mid_point:-1]
+
+    fig, axs = plt.subplots(1, 2, figsize=(20, 6))
+     # Left plot
+    axs[0].plot(left_pressures, left_altitudes, marker='o', linestyle='-')
+    axs[0].set_xlabel('Pressure (Pa)')
+    axs[0].set_ylabel('Relative Altitude (m)')
+    axs[0].set_title('Descending Pressure')
+    axs[0].invert_xaxis()
+    axs[0].grid(True)
+
+    # Right plot
+    axs[1].plot(right_pressures, right_altitudes, marker='o', linestyle='-')
+    axs[1].set_xlabel('Pressure (Pa)')
+    axs[1].set_title('Ascending Pressure')
+    axs[1].grid(True)
+
+    plt.show()
+
 
 if __name__ == "__main__":
     main()
