@@ -81,7 +81,7 @@ def calculate_relative_altitude(T_0, P_0, P_list):
     T_grad = -0.0065 # The temperature change over altitude [K/m]
     R = 287.058 # The gas constant: 287.052 in paper, 287.058 in wikipedia [J/K*kg]
     g = 9.80665 # The normal gravity [m/s^2]
-    delta_h = lambda P: (T_0 / T_grad) / (1 - (P / P_0) ** (T_grad * R / g))
+    delta_h = lambda P: (T_0 / T_grad) * (1 - (P / P_0) ** (T_grad * R / g))
 
     # return [delta_h(p) for p in P_list]
     return P_list, [delta_h(p) for p in P_list]
@@ -148,14 +148,18 @@ def main():
     print(f'Initial pressure: {cluster_average_list[0]}')
 
     mid_point = len(cluster_average_list) // 2
-    left_pressures = cluster_average_list[1:mid_point + 1]
-    right_pressures = cluster_average_list[mid_point:-1]
-    left_altitudes = relative_altitude_list[1:mid_point + 1]
-    right_altitudes = relative_altitude_list[mid_point:-1]
+    left_pressures = cluster_average_list[:mid_point + 1]
+    left_pressures = [l*100 for l in left_pressures]
+    right_pressures = cluster_average_list[mid_point:]
+    right_pressures = [r*100 for r in right_pressures]
+    left_altitudes = relative_altitude_list[:mid_point + 1]
+    right_altitudes = relative_altitude_list[mid_point:]
 
     fig, axs = plt.subplots(1, 2, figsize=(20, 6))
      # Left plot
-    axs[0].plot(left_pressures, left_altitudes, marker='o', linestyle='-')
+    axs[0].plot(left_pressures, left_altitudes, marker='o', linestyle='--')
+    for pressure, altitude in zip(left_pressures, left_altitudes):
+        axs[0].text(pressure, altitude, f'{altitude}', fontsize=13, ha='center', va='bottom')
     axs[0].set_xlabel('Pressure (Pa)')
     axs[0].set_ylabel('Relative Altitude (m)')
     axs[0].set_title('Descending Pressure')
@@ -163,7 +167,9 @@ def main():
     axs[0].grid(True)
 
     # Right plot
-    axs[1].plot(right_pressures, right_altitudes, marker='o', linestyle='-')
+    axs[1].plot(right_pressures, right_altitudes, marker='o', linestyle='--')
+    for pressure, altitude in zip(right_pressures, right_altitudes):
+        axs[1].text(pressure, altitude, f'{altitude}', fontsize=13, ha='center', va='bottom')
     axs[1].set_xlabel('Pressure (Pa)')
     axs[1].set_title('Ascending Pressure')
     axs[1].grid(True)
