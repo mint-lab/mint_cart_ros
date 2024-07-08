@@ -1,5 +1,6 @@
 /imu/data
 /ublox/fix
+/ublox/vel
 /zed2/zed_node/atm_press
 /zed2/zed_node/depth/depth_registered
 /zed2/zed_node/imu/data

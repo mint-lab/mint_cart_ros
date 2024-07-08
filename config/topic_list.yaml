@@ -3,6 +3,7 @@ ahrs:
 
 gps:
   - /ublox/fix
+  - /ublox/vel
 
 lidar:
   - /points
