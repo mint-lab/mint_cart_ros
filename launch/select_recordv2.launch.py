@@ -19,13 +19,15 @@ def load_topics(context):
 
     camera_model = LaunchConfiguration('camera_model').perform(context)
     use_ahrs = LaunchConfiguration('use_ahrs').perform(context)
-    use_gps = LaunchConfiguration('use_gps').perform(context)
+    use_rtk_gps = LaunchConfiguration('use_rtk_gps').perform(context)
+    use_normal_gps = LaunchConfiguration('use_normal_gps').perform(context)
     use_lidar = LaunchConfiguration('use_lidar').perform(context)
     use_ascender = LaunchConfiguration('use_ascender').perform(context)
 
     print(f"Camera Model: {camera_model}")
     print(f"Use AHRS: {use_ahrs}")
-    print(f"Use GPS: {use_gps}")
+    print(f"Use RTKGPS: {use_rtk_gps}")
+    print(f"Use NormalGPS: {use_normal_gps}")
     print(f"Use Lidar: {use_lidar}")
     print(f"Use Ascender: {use_ascender}")
 
@@ -35,8 +37,10 @@ def load_topics(context):
         record_topics.extend(all_topics[camera_model])
     if use_ahrs == 'true':
         record_topics.extend(all_topics['ahrs'])
-    if use_gps == 'true':
-        record_topics.extend(all_topics['gps'])
+    if use_rtk_gps == 'true':
+        record_topics.extend(all_topics['rtk_gps'])
+    if use_normal_gps == 'true':
+        record_topics.extend(all_topics['normal_gps'])
     if use_lidar == 'true':
         record_topics.extend(all_topics['lidar'])
     if use_ascender == 'true':
@@ -62,9 +66,13 @@ def generate_launch_description():
         'use_ahrs', default_value='true',
         description="true: Record AHRS data"
     )
-    use_gps_arg = DeclareLaunchArgument(
-        'use_gps', default_value='true',
-        description="true: Record GPS data"
+    use_rtk_gps_arg = DeclareLaunchArgument(
+        'use_rtk_gps', default_value='true',
+        description="true: Record RTKGPS data"
+    )
+    use_normal_gps_arg = DeclareLaunchArgument(
+        'use_normal_gps', default_value='true',
+        description="true: Record NormalGPS data"
     )
     use_lidar_arg = DeclareLaunchArgument(
         'use_lidar', default_value='false',
@@ -78,7 +86,8 @@ def generate_launch_description():
     return LaunchDescription([
         camera_model_arg,
         use_ahrs_arg,
-        use_gps_arg,
+        use_rtk_gps_arg,
+        use_normal_gps_arg,
         use_lidar_arg,
         use_ascender_arg,
         OpaqueFunction(function=load_topics)
