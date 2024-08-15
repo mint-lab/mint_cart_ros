@@ -1,0 +1,6 @@
+nmea_navsat_driver:
+  ros__parameters:
+    baud: 9600
+    frame_id: "normal_link"
+    time_ref_source: "normal_link"
+    useRMC: False
