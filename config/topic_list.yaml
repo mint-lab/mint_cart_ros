@@ -1,18 +1,21 @@
 ahrs:
   - /imu/data
 
-gps:
+rtk_gps:
   - /ublox/fix
   - /ublox/vel
+
+normal_gps:
+  - /ascen/fix
+  - /ascen/vel
 
 lidar:
   - /points
 
 ascender:
-  - /ascender_position_estimation
+  - /ascender_position_estimation  # PoseStamped
   - /ascender_sensor_values
   - /ascender_sensor_values_filter
-  - /ascender_position_desired_control
   - /ascender_rope_length
   - /wheelleg_joint_state_desired
   - /ascender_joint_state_desired
